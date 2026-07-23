@@ -112,13 +112,13 @@ function applyUiScale(value) {
 
 /**
  * Get the parent resource name for NUI communication
- * Returns 'es_soundtester' in development mode
+ * Returns 'cortex_soundtool' in development mode
  */
 function getResourceName() {
   if (typeof window.GetParentResourceName === 'function') {
     return window.GetParentResourceName()
   }
-  return 'es_soundtester'
+  return 'cortex_soundtool'
 }
 
 /**

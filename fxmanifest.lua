@@ -1,8 +1,9 @@
 fx_version 'cerulean'
 game 'gta5'
 
-author 'ES Ecosystem'
-description 'Developer utility for browsing and testing GTA V sounds'
+name 'cortex_soundtool'
+author 'Cortex'
+description 'Cortex Sound Tool — developer utility for browsing and testing GTA V sounds'
 version '1.0.0'
 
 shared_scripts {

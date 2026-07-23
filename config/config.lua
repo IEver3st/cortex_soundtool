@@ -1,5 +1,5 @@
 --[[
-    es_soundtester Configuration
+    cortex_soundtool Configuration
     Customize keybinds, volume, and playback behavior
 ]]
 

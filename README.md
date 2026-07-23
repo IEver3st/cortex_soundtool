@@ -1,4 +1,4 @@
-# es_soundtester — Cortex Sound Tester
+# cortex_soundtool — Cortex Sound Tester
 
 ![FiveM](https://img.shields.io/badge/FiveM-Cfx%20Re-%23FF6C00?logo=fivem&logoColor=white)
 ![Lua](https://img.shields.io/badge/Lua-%23000080?logo=lua&logoColor=white)
@@ -20,9 +20,9 @@ A client-side FiveM developer utility for browsing, filtering, and previewing GT
 
 ## Installation
 
-1. Copy the `es_soundtester` folder into your FiveM server under `resources/`.
-2. Add `ensure es_soundtester` to your `server.cfg`.
-3. Restart the server or run `refresh` followed by `ensure es_soundtester` from the server console.
+1. Copy the `cortex_soundtool` folder into your FiveM server under `resources/`.
+2. Add `ensure cortex_soundtool` to your `server.cfg`.
+3. Restart the server or run `refresh` followed by `ensure cortex_soundtool` from the server console.
 
 ### Building the UI
 
@@ -75,7 +75,7 @@ The UI has two tabs:
 ## Architecture
 
 ```
-es_soundtester/
+cortex_soundtool/
 ├── fxmanifest.lua            # FiveM resource manifest (fx_version cerulean, game gta5)
 ├── client/
 │   └── client.lua            # Client runtime: NUI callbacks, commands, exports, playback, vehicle preview
@@ -101,11 +101,11 @@ es_soundtester/
 Other resources can use:
 
 ```lua
-exports['es_soundtester']:PlaySound(soundName, soundSet)
-exports['es_soundtester']:GetLastPlayedSound()
-exports['es_soundtester']:OpenUI()
-exports['es_soundtester']:CloseUI()
-exports['es_soundtester']:ToggleUI()
+exports['cortex_soundtool']:PlaySound(soundName, soundSet)
+exports['cortex_soundtool']:GetLastPlayedSound()
+exports['cortex_soundtool']:OpenUI()
+exports['cortex_soundtool']:CloseUI()
+exports['cortex_soundtool']:ToggleUI()
 ```
 
 ## Limitations

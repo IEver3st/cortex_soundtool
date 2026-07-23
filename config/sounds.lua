@@ -1,5 +1,5 @@
 --[[
-    es_soundtester Sound Database
+    cortex_soundtool Sound Database
     
     Enhanced version with comprehensive GTA V sound library.
     Loads 2,204+ sounds from JSON database with automatic categorization.
@@ -72,7 +72,7 @@ end
 local function loadSoundDatabase()
     local jsonData = LoadResourceFile(resourceName, "config/sounds_database.json")
     if not jsonData then
-        print("[es_soundtester] ERROR: Could not load sounds_database.json")
+        print("[cortex_soundtool] ERROR: Could not load sounds_database.json")
         return false
     end
     
@@ -81,7 +81,7 @@ local function loadSoundDatabase()
     end)
     
     if not success or not sounds then
-        print("[es_soundtester] ERROR: Failed to parse sounds_database.json")
+        print("[cortex_soundtool] ERROR: Failed to parse sounds_database.json")
         return false
     end
     
@@ -131,7 +131,7 @@ local function loadSoundDatabase()
     
     table.sort(SoundSets)
     
-    print(string.format("[es_soundtester] Loaded %d sounds across %d categories with %d unique sound sets", 
+    print(string.format("[cortex_soundtool] Loaded %d sounds across %d categories with %d unique sound sets", 
         #Sounds, #Categories, #SoundSets))
     
     return true

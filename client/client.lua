@@ -41,7 +41,7 @@ local currentAudioBank = nil
 
 local function debugLog(message)
     if Config.Debug then
-        print(string.format("[es_soundtester] %s", message))
+        print(string.format("[cortex_soundtool] %s", message))
     end
 end
 

@@ -582,4 +582,4 @@ VehicleAudio.Categories = {
     },
 }
 
-print(string.format("[es_soundtester] Loaded %d vehicle audio categories", #VehicleAudio.Categories))
+print(string.format("[cortex_soundtool] Loaded %d vehicle audio categories", #VehicleAudio.Categories))
