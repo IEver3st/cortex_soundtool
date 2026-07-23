@@ -773,8 +773,8 @@ function App() {
               type="range"
               className="volume-slider"
               min="0"
-              max="4"
-              step="0.05"
+              max="1"
+              step="0.01"
               value={volume}
               onChange={(e) => setVolume(parseFloat(e.target.value))}
             />

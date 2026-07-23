@@ -10,7 +10,7 @@ Config = {}
 --------------------------------------------------------------------------------
 -- Key to open/close the sound tester UI
 -- See: https://docs.fivem.net/docs/game-references/input-mapper-parameter-ids/keyboard/
-Config.OpenKey = "F9"
+Config.OpenKey = "MINUS"
 
 -- Key to replay the last selected sound without opening the menu
 Config.ReplayKey = "F10"
