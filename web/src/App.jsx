@@ -126,15 +126,25 @@ function getResourceName() {
  * Fixed: No longer causes stack overflow - properly fetches without recursion
  */
 async function postNui(event, data = {}) {
+  if (!/^[A-Za-z0-9:_-]{1,64}$/.test(event)) return
+  if (typeof window.GetParentResourceName !== 'function') return
+
+  const controller = new AbortController()
+  const timer = window.setTimeout(() => controller.abort(), 4000)
+
   try {
     const resourceName = getResourceName()
-    await fetch(`https://${resourceName}/${event}`, {
+    const response = await fetch(`https://${resourceName}/${event}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
+      signal: controller.signal,
     })
+    if (!response.ok) throw new Error(`NUI request failed with status ${response.status}`)
   } catch (error) {
     // Silently fail in browser dev mode
+  } finally {
+    window.clearTimeout(timer)
   }
 }
 

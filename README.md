@@ -56,7 +56,6 @@ Edit `config/config.lua` to change behavior:
 | `Config.SoundsPerPage` | `50` | Number of sounds shown per page in the UI |
 | `Config.Debug` | `false` | Enable console debug logging |
 | `Config.VehiclePreviewDuration` | `4000` | How long vehicle audio preview runs before auto-stopping (ms) |
-| `Config.VehicleDamageMultiplier` | `0.1` | Damage multiplier applied while the UI is open |
 | `Config.NotificationDuration` | `3000` | Duration of on-screen notifications (ms) |
 
 ## Usage

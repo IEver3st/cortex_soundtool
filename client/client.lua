@@ -28,6 +28,7 @@ local SetEntityLocallyInvisible = SetEntityLocallyInvisible
 local SetEntityCoords = SetEntityCoords
 local RequestScriptAudioBank = RequestScriptAudioBank
 local ReleaseScriptAudioBank = ReleaseScriptAudioBank
+local IsEntityDead = IsEntityDead
 
 local isUIOpen = false
 local lastPlayedSound = nil
@@ -38,6 +39,28 @@ local previewVehicle = nil
 local vehicleRpmThread = nil
 local vehicleThreadId = 0
 local currentAudioBank = nil
+local allowedSoundPairs = {}
+local allowedVehicleAudio = {}
+
+local function isFiniteNumber(value)
+    return type(value) == "number"
+        and value == value
+        and value ~= math.huge
+        and value ~= -math.huge
+end
+
+local function boundedString(value, maximumLength)
+    if type(value) ~= "string" then return nil end
+    local text = value:match("^%s*(.-)%s*$") or ""
+    if text == "" or #text > maximumLength then return nil end
+    return text
+end
+
+local function boundedNumber(value, minimum, maximum, fallback)
+    local number = tonumber(value)
+    if not isFiniteNumber(number) then return fallback end
+    return math.max(minimum, math.min(maximum, number))
+end
 
 local function debugLog(message)
     if Config.Debug then
@@ -63,6 +86,9 @@ local function loadAudioBank(bankName, timeout)
     if not bankName or bankName == "" then
         return true
     end
+
+    bankName = boundedString(bankName, 96)
+    if not bankName then return false end
     
     if currentAudioBank == bankName then
         return true
@@ -121,7 +147,10 @@ local function stopVehicleAudio()
 end
 
 local function requestModel(model, timeout)
-    local hash = type(model) == "string" and joaat(model) or model
+    model = type(model) == "string" and boundedString(model, 64) or model
+    if model == nil then return false end
+    local hash = type(model) == "string" and joaat(model) or tonumber(model)
+    if not hash or not IsModelInCdimage(hash) or not IsModelAVehicle(hash) then return false end
     if HasModelLoaded(hash) then return true end
     RequestModel(hash)
     local start = GetGameTimer()
@@ -152,12 +181,13 @@ local function playVehicleAudio(audioName, modelName, rpm, volume)
     stopCurrentSound()
     deletePreviewVehicle()
     
-    local model = modelName or "adder"
-    currentVehicleRpm = math.min(0.99, rpm or 0.5)
-    currentVehicleVolume = volume or 1.0
+    local model = boundedString(modelName, 64) or "adder"
+    local cleanAudioName = boundedString(audioName, 64)
+    currentVehicleRpm = boundedNumber(rpm, 0.1, 0.99, 0.5)
+    currentVehicleVolume = boundedNumber(volume, 0.1, 4.0, 1.0)
     
     debugLog(string.format("Starting vehicle audio - Model: %s, Audio: %s, RPM: %.0f%%, Volume: %.0f%%", 
-        model, audioName or "default", currentVehicleRpm * 100, currentVehicleVolume * 100))
+        model, cleanAudioName or "default", currentVehicleRpm * 100, currentVehicleVolume * 100))
     
     if not requestModel(model, 5000) then
         debugLog("ERROR: Failed to load vehicle model: " .. model)
@@ -191,8 +221,8 @@ local function playVehicleAudio(audioName, modelName, rpm, volume)
     SetVehicleNeedsToBeHotwired(previewVehicle, false)
     SetVehicleIsConsideredByPlayer(previewVehicle, false)
     
-    if audioName and audioName ~= "" then
-        ForceVehicleEngineAudio(previewVehicle, audioName)
+    if cleanAudioName then
+        ForceVehicleEngineAudio(previewVehicle, cleanAudioName)
     end
     
     SetVehicleEngineOn(previewVehicle, true, true, false)
@@ -223,13 +253,14 @@ local function playVehicleAudio(audioName, modelName, rpm, volume)
     end)
     
     debugLog(string.format("Vehicle audio started: %s (RPM: %.0f%%, Volume: %.0f%%)", 
-        audioName or model, currentVehicleRpm * 100, currentVehicleVolume * 100))
+        cleanAudioName or model, currentVehicleRpm * 100, currentVehicleVolume * 100))
     
     return true
 end
 
 local function setVehicleRpm(rpm)
-    currentVehicleRpm = math.max(0.1, math.min(0.99, rpm))
+    currentVehicleRpm = boundedNumber(rpm, 0.1, 0.99, nil)
+    if not currentVehicleRpm then return false end
     if previewVehicle and DoesEntityExist(previewVehicle) then
         SetVehicleCurrentRpm(previewVehicle, currentVehicleRpm)
         return true
@@ -238,7 +269,8 @@ local function setVehicleRpm(rpm)
 end
 
 local function setVehicleVolume(volume)
-    currentVehicleVolume = math.max(0.1, math.min(4.0, volume))
+    currentVehicleVolume = boundedNumber(volume, 0.1, 4.0, nil)
+    if not currentVehicleVolume then return false end
     if previewVehicle and DoesEntityExist(previewVehicle) and vehicleBaseCoords then
         local zOffset = getVehicleDistance(currentVehicleVolume)
         FreezeEntityPosition(previewVehicle, false)
@@ -264,20 +296,22 @@ local function getSoundDistance(volume)
 end
 
 function PlaySound(soundName, soundSet, atPosition, volume, audioBank)
-    if not soundName or soundName == "" then
+    soundName = boundedString(soundName, 96)
+    if not soundName then
         debugLog("ERROR: Sound name is empty or nil")
         notify("~r~Error: Invalid sound name", true)
         return false
     end
     
-    if not soundSet or soundSet == "" then
+    soundSet = boundedString(soundSet, 96)
+    if not soundSet then
         debugLog("ERROR: Sound set is empty or nil")
         notify("~r~Error: Invalid sound set", true)
         return false
     end
     
-    local soundVolume = volume or Config.DefaultVolume
-    soundVolume = math.max(0.0, math.min(4.0, soundVolume))
+    local soundVolume = boundedNumber(volume, 0.0, 4.0, boundedNumber(Config.DefaultVolume, 0.0, 4.0, 1.0))
+    audioBank = audioBank == nil and nil or boundedString(audioBank, 96)
     
     stopCurrentSound()
     
@@ -330,6 +364,11 @@ local function prepareData()
     local categoryMap = {}
     
     for _, entry in ipairs(Sounds) do
+        if type(entry.sound) == "string" and type(entry.set) == "string" then
+            allowedSoundPairs[entry.sound .. "\0" .. entry.set] = {
+                bank = type(entry.bank) == "string" and entry.bank or nil,
+            }
+        end
         if not soundSetMap[entry.set] then
             soundSetMap[entry.set] = true
             table.insert(cachedSoundSets, entry.set)
@@ -338,6 +377,14 @@ local function prepareData()
         if entry.category and not categoryMap[entry.category] then
             categoryMap[entry.category] = true
             table.insert(cachedCategoryList, entry.category)
+        end
+    end
+
+    for _, category in ipairs((VehicleAudio and VehicleAudio.Categories) or {}) do
+        for _, vehicle in ipairs(category.vehicles or {}) do
+            if type(vehicle.model) == "string" and type(vehicle.audio) == "string" then
+                allowedVehicleAudio[vehicle.model] = vehicle.audio
+            end
         end
     end
     
@@ -379,15 +426,6 @@ local function closeUI()
     stopCurrentSound()
     deletePreviewVehicle()
     
-    -- Reset vehicle state
-    local ped = PlayerPedId()
-    local veh = GetVehiclePedIsIn(ped, false)
-    if veh ~= 0 and DoesEntityExist(veh) then
-        SetVehicleDamageModifier(veh, 1.0)
-        SetVehicleEngineCanDegrade(veh, true)
-        SetVehicleEngineOn(veh, true, true, false)
-    end
-    
     SendNUIMessage({
         type = "close"
     })
@@ -409,12 +447,19 @@ RegisterNUICallback("close", function(data, cb)
 end)
 
 RegisterNUICallback("playSound", function(data, cb)
+    if type(data) ~= "table" then cb({ success = false, error = "invalid_payload" }) return end
+    prepareData()
     local soundName = data.sound
     local soundSet = data.set
     local volume = data.volume or Config.DefaultVolume
     local audioBank = data.bank
     
-    local success = PlaySound(soundName, soundSet, nil, volume, audioBank)
+    local pairKey = type(soundName) == "string" and type(soundSet) == "string" and (soundName .. "\0" .. soundSet) or nil
+    local allowedSound = pairKey and allowedSoundPairs[pairKey] or nil
+    local requestedBank = boundedString(audioBank, 96)
+    local success = allowedSound ~= nil and requestedBank == allowedSound.bank
+        and PlaySound(soundName, soundSet, nil, volume, requestedBank)
+        or false
     
     cb({ success = success, playing = isPlaying })
 end)
@@ -426,12 +471,17 @@ RegisterNUICallback("stopSound", function(data, cb)
 end)
 
 RegisterNUICallback("playVehicleAudio", function(data, cb)
+    if type(data) ~= "table" then cb({ success = false, error = "invalid_payload" }) return end
+    prepareData()
     local audioName = data.audio
     local modelName = data.model
     local rpm = data.rpm or 0.5
     local volume = data.volume or 1.0
     
-    local success = playVehicleAudio(audioName, modelName, rpm, volume)
+    local expectedAudio = type(modelName) == "string" and allowedVehicleAudio[modelName] or nil
+    local success = expectedAudio ~= nil and audioName == expectedAudio
+        and playVehicleAudio(audioName, modelName, rpm, volume)
+        or false
     
     cb({ success = success, playing = isPlaying })
 end)
@@ -442,19 +492,25 @@ RegisterNUICallback("stopVehicleAudio", function(data, cb)
 end)
 
 RegisterNUICallback("setVehicleRpm", function(data, cb)
+    if type(data) ~= "table" then cb({ success = false, error = "invalid_payload" }) return end
     local rpm = data.rpm or 0.5
     local success = setVehicleRpm(rpm)
     cb({ success = success })
 end)
 
 RegisterNUICallback("setVehicleVolume", function(data, cb)
+    if type(data) ~= "table" then cb({ success = false, error = "invalid_payload" }) return end
     local volume = data.volume or 1.0
     local success = setVehicleVolume(volume)
     cb({ success = success })
 end)
 
 RegisterNUICallback("copyToClipboard", function(data, cb)
-    debugLog(string.format("Copied to clipboard: %s", data.text or ""))
+    local text = type(data) == "table" and data.text or nil
+    if type(text) ~= "string" or #text > 512 then
+        cb({ success = false, error = "invalid_payload" })
+        return
+    end
     cb({})
 end)
 
@@ -483,38 +539,6 @@ RegisterCommand("playsound", function(source, args)
 end, false)
 
 CreateThread(function()
-    while true do
-        if isUIOpen then
-            local ped = PlayerPedId()
-            local veh = GetVehiclePedIsIn(ped, false)
-            if veh ~= 0 and DoesEntityExist(veh) then
-                -- Automatically turn engine back on and prevent stalling
-                SetVehicleEngineCanDegrade(veh, false)
-                
-                if not GetIsVehicleEngineRunning(veh) or GetVehicleEngineHealth(veh) < 700.0 then
-                    SetVehicleEngineHealth(veh, 1000.0)
-                    SetVehiclePetrolTankHealth(veh, 1000.0)
-                    SetVehicleOilLevel(veh, 5.0)
-                    SetVehicleEngineOn(veh, true, true, false)
-                end
-                
-                -- Scale back damage
-                SetVehicleDamageModifier(veh, Config.VehicleDamageMultiplier or 0.1)
-                
-                -- Optional: Keep it clean while testing
-                if Config.VehicleDamageMultiplier == 0 then
-                    SetVehicleBodyHealth(veh, 1000.0)
-                    SetVehicleFixed(veh)
-                end
-            end
-            Wait(0)
-        else
-            Wait(500)
-        end
-    end
-end)
-
-CreateThread(function()
     while not NetworkIsSessionStarted() do
         Wait(100)
     end
@@ -523,6 +547,23 @@ CreateThread(function()
     
     debugLog(string.format("Sound Tester loaded with %d sounds (Game Build: %d)", #Sounds, currentGameBuild))
     debugLog(string.format("Press %s to open UI, %s to replay last sound", Config.OpenKey, Config.ReplayKey))
+end)
+
+CreateThread(function()
+    while true do
+        if isUIOpen and IsEntityDead(PlayerPedId()) then
+            closeUI()
+        end
+        Wait(isUIOpen and 500 or 1500)
+    end
+end)
+
+AddEventHandler("onClientResourceStop", function(resourceName)
+    if resourceName ~= GetCurrentResourceName() then return end
+    isUIOpen = false
+    SetNuiFocus(false, false)
+    stopCurrentSound()
+    deletePreviewVehicle()
 end)
 
 exports("PlaySound", PlaySound)

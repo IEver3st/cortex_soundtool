@@ -43,10 +43,6 @@ Config.Debug = false
 -- Duration for vehicle audio preview before it stops automatically (milliseconds)
 Config.VehiclePreviewDuration = 4000
 
--- Damage multiplier for vehicles while using the sound tester (0.0 to 1.0)
--- 0.1 means vehicles take only 10% of normal damage
-Config.VehicleDamageMultiplier = 0.1
-
 --------------------------------------------------------------------------------
 -- NOTIFICATIONS
 --------------------------------------------------------------------------------

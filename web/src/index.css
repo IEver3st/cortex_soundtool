@@ -2,8 +2,6 @@
  * cortex_soundtool - "Cortex" cool-dark + cyan accent
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
-
 :root {
   /* Core — blue-tinted charcoal */
   --bg-app: rgba(0, 0, 0, 0.0);
@@ -43,8 +41,8 @@
   --state-active: #f0f9ff;
 
   /* Fonts */
-  --font-sans: 'Outfit', system-ui, sans-serif;
-  --font-mono: 'Share Tech Mono', monospace;
+  --font-sans: 'Segoe UI', Arial, sans-serif;
+  --font-mono: Consolas, 'Courier New', monospace;
 
   /* Metrics */
   --es-ui-scale: 1;
